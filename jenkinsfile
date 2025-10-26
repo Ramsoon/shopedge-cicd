@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        GCP_PROJECT = credentials('gcp-project-id')
+        GCP_PROJECT = credentials('striking-water-472711-g2')
         GKE_CLUSTER = 'shopedgedge-cluster'
         GKE_ZONE = 'us-central1' 
         IMAGE_NAME = 'us-central1-docker.pkg.dev/shopedge-project/shopedgeedge/shopedge-app'
