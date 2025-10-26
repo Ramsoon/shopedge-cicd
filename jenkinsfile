@@ -4,10 +4,10 @@ pipeline {
     environment {
         GCP_PROJECT = credentials('gcp-project-id')
         GKE_CLUSTER = 'shopedgedge-cluster'
-        GKE_ZONE = 'us-central1'
+        GKE_ZONE = 'us-central1' 
         IMAGE_NAME = 'us-central1-docker.pkg.dev/shopedge-project/shopedgeedge/shopedge-app'
     }
-    
+    // just comment
     parameters {
         string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
     }
