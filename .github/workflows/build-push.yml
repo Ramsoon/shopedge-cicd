@@ -28,7 +28,7 @@ jobs:
       with:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
         #service_account:
-        # Remove token_format or hset it to 'id_token'
+        # Remove token_format or set it to 'id_token'
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
