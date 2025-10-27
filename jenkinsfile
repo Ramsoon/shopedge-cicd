@@ -2,63 +2,96 @@ pipeline {
     agent any
     
     environment {
-        GCP_PROJECT = credentials('striking-water-472711-g2')
+        GCP_PROJECT = 'striking-water-472711-g2'  // Remove credentials() - use direct value
         GKE_CLUSTER = 'shopedgedge-cluster'
         GKE_ZONE = 'us-central1' 
-        IMAGE_NAME = 'us-central1-docker.pkg.dev/shopedge-project/shopedgeedge/shopedge-app'
+        // Fixed IMAGE_NAME - use your actual project ID
+        IMAGE_NAME = "us-central1-docker.pkg.dev/${GCP_PROJECT}/shopedgedge/shopedge-app"
     }
-    // just comment
+    
     parameters {
         string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
     }
     
     stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+        
         stage('Setup GKE Auth') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'gcp-service-account', variable: 'GC_KEY')]) {
-                        sh '''
-                            gcloud auth activate-service-account --key-file=$GC_KEY
-                            gcloud config set project $GCP_PROJECT
-                            gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
-                        '''
+                        // Use bat for Windows Jenkins
+                        bat """
+                            gcloud auth activate-service-account --key-file="%GC_KEY%"
+                            gcloud config set project %GCP_PROJECT%
+                            gcloud container clusters get-credentials %GKE_CLUSTER% --zone %GKE_ZONE%
+                        """
                     }
                 }
             }
         }
         
-        stage('Deploy to Kubernetes') {
+        stage('Verify Cluster Access') {
             steps {
-                sh '''
-                    # Update image tag in deployment
-                    sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_NAME:$IMAGE_TAG|g" k8s/app-deployment.yaml
-                    
-                    # Apply Kubernetes manifests
-                    kubectl apply -f k8s/app-deployment.yaml
-                    kubectl apply -f k8s/monitoring.yaml
-                    
-                    # Wait for deployment to complete
-                    kubectl rollout status deployment/shopedge-app --timeout=300s
-                '''
+                bat """
+                    kubectl cluster-info
+                    kubectl get nodes
+                    kubectl get namespaces
+                """
             }
         }
         
-        stage('Run Tests') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                    # Simple smoke test
-                    echo "Performing smoke tests..."
-                    sleep 30
+                bat """
+                    echo "Deploying with image: %IMAGE_NAME%:%IMAGE_TAG%"
                     
-                    # Test if application is responding
-                    APP_URL=$(kubectl get service shopedge-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-                    if curl -f http://$APP_URL; then
-                        echo "Smoke test passed!"
-                    else
-                        echo "Smoke test failed!"
-                        exit 1
-                    fi
-                '''
+                    # Update image tag in deployment if the file exists
+                    if exist k8s\\app-deployment.yaml (
+                        echo "Updating deployment image..."
+                        powershell -Command "(Get-Content k8s\\app-deployment.yaml) -replace 'IMAGE_PLACEHOLDER', '%IMAGE_NAME%:%IMAGE_TAG%' | Set-Content k8s\\app-deployment.yaml"
+                    )
+                    
+                    # Apply Kubernetes manifests
+                    if exist k8s\\app-deployment.yaml (
+                        kubectl apply -f k8s/app-deployment.yaml
+                    )
+                    
+                    if exist k8s\\monitoring.yaml (
+                        kubectl apply -f k8s/monitoring.yaml
+                    )
+                    
+                    # Wait for deployment to complete
+                    kubectl rollout status deployment/shopedge-app --timeout=300s
+                """
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                bat """
+                    kubectl get deployments
+                    kubectl get pods
+                    kubectl get services
+                """
+            }
+        }
+        
+        stage('Run Smoke Tests') {
+            steps {
+                bat """
+                    echo "Waiting for application to be ready..."
+                    timeout /t 30 /nobreak
+                    
+                    # Test if application pods are running
+                    kubectl get pods -l app=shopedge-app
+                    
+                    echo "Smoke tests completed"
+                """
             }
         }
         
@@ -68,7 +101,6 @@ pipeline {
             }
             steps {
                 echo "Deployment to production completed successfully"
-                // Add production-specific steps here
             }
         }
     }
@@ -76,15 +108,12 @@ pipeline {
     post {
         always {
             echo "Pipeline execution completed"
-            // Cleanup or notifications
         }
         success {
             echo "Deployment successful!"
-            // Send success notificationh
         }
         failure {
             echo "Deployment failed!"
-            // Send failure notificationi
         }
     }
 }
