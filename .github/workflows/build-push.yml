@@ -46,7 +46,7 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA
         docker tag $REGISTRY/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA $REGISTRY/$PROJECT_ID/$IMAGE_NAME:latest
         docker push $REGISTRY/$PROJECT_ID/$IMAGE_NAME:latest
-#deployment - jenkins
+#deployment - jenkins1
     - name: Trigger Jenkins Deployment
       run: |
         curl -X POST ${{ secrets.JENKINS_URL }}/job/shopedge/build?token=shopedgeTrigger123 \
