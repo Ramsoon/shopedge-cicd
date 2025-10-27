@@ -84,7 +84,7 @@ pipeline {
         }
         failure {
             echo "Deployment failed!"
-            // Send failure notification
+            // Send failure notificationi
         }
     }
 }
