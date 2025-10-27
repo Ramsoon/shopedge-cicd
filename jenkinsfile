@@ -19,7 +19,8 @@ pipeline {
                     withCredentials([file(credentialsId: 'gcp-service-account', variable: 'GC_KEY')]) {
                         sh '''
                             gcloud auth activate-service-account --key-file=$GC_KEY
-                            gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE --project $GCP_PROJECT
+                            gcloud config set project $GCP_PROJECT
+                            gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
                         '''
                     }
                 }
